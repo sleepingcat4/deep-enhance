@@ -15,7 +15,9 @@ def enhance_audio(input_audio_path, output_audio_path, solver="midpoint", nfe=64
 def enhance_folder(input_folder, output_folder, solver="midpoint", nfe=64, tau=0.5):
     input_folder = Path(input_folder)
     output_folder = Path(output_folder)
-    output_folder.mkdir(parents=True, exist_ok=True)
+
+    if not output_folder.exists():
+        output_folder.mkdir(parents=True, exist_ok=True)
 
     input_files = list(input_folder.glob("*.mp3")) + list(input_folder.glob("*.wav"))
     if not input_files:
