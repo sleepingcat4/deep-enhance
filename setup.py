@@ -43,8 +43,8 @@ setup(
     packages=find_packages(),
     install_requires=requirements,
     url="https://github.com/resemble-ai/resemble-enhance",
-    author="Resemble AI",
-    author_email="team@resemble.ai",
+    author="Ammar",
+    author_email="sleeping4cat@gmail.com",
     entry_points={
         "console_scripts": [
             "resemble-enhance=resemble_enhance.enhancer.__main__:main",
