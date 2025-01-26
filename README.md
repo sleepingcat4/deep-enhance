@@ -19,6 +19,17 @@ output_folder = "/exp/output_folder"
 inference_terminal.enhance_folder(input_folder, output_folder, solver="midpoint", nfe=64, tau=0.5, run_dir="/exp/model")
 ```
 
+### Multi-GPU Inference
+```Python
+from resemble_enhance.enhancer import node_decode 
+
+input_folder = "/exp/folder" 
+output_folder = "/exp/result" 
+node_decode.node_inference(input_folder, output_folder, solver="midpoint", nfe=64, tau=0.5, run_dir="/exp/model")
+```
+
+**Multi-GPU uses all the available GPUs to assign X number of files on each GPU and process them in real-time.**
+
 **Note:** Provide path where you had saved the model and input and output folder paths. We designed it to work on folders as we wanted to knock-down large amounts of files with little to no effort. On T4 GPU, We can finish enhancement of 4 files each (8 seconds in length) in 15.14 seconds. Batch inference is unfortunately not possible in the current implementation. It requires more advanced modifications. 
 
 ### Acknowledge
