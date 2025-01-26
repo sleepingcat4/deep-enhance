@@ -6,6 +6,8 @@ from torch.utils.data import DataLoader
 from torch import nn
 import torch.multiprocessing as mp
 
+mp.set_start_method('spawn', force=True)
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 num_gpus = torch.cuda.device_count()
 
