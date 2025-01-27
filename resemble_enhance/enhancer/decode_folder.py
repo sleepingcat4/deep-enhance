@@ -29,11 +29,13 @@ def enhance_folder(input_folder, output_folder, run_dir, solver="midpoint", nfe=
         output_audio = output_folder / f"{input_file.stem}_enhanced.wav"
         enhance_audio(input_file, output_audio, run_dir, solver, nfe, tau)
 
-def decode_subfolder(csv_file, output_base_folder, run_dir, solver="midpoint", nfe=64, tau=0.5):
+def decode_subfolder(csv_file, output_base_folder, run_dir, gpu_id=0, solver="midpoint", nfe=64, tau=0.5):
     df = pd.read_csv(csv_file)
     if 'folder_path' not in df.columns:
         print("CSV file must contain a 'folder_path' column.")
         return
+
+    device = f"cuda:{gpu_id}" if torch.cuda.is_available() else "cpu"
 
     for folder_path in df['folder_path']:
         folder_path = Path(folder_path)
