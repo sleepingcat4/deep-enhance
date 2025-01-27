@@ -37,8 +37,16 @@ def node_inference(input_folder, output_folder, run_dir, solver="midpoint", nfe=
     end_idx = (process_index + 1) * chunk_size if process_index != num_processes - 1 else len(input_files)
 
     files_to_process = input_files[start_idx:end_idx]
+    
+    seen_files = set()
 
     for input_file in files_to_process:
+        if input_file.stem in seen_files:
+            print(f"Duplicate file detected: {input_file.stem}, skipping.")
+            continue
+        
+        seen_files.add(input_file.stem)
+        
         current_device = accelerator.device
         output_audio = output_folder / f"{input_file.stem}_enhanced.wav"
         enhance_audio(input_file, output_audio, run_dir, current_device, solver, nfe, tau)
