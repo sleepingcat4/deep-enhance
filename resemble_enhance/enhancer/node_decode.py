@@ -29,7 +29,16 @@ def node_inference(input_folder, output_folder, run_dir, solver="midpoint", nfe=
     input_files = list(input_files)
     input_files = accelerator.prepare(input_files)
 
-    for input_file in input_files:
+    num_processes = accelerator.num_processes
+    process_index = accelerator.process_index
+
+    chunk_size = len(input_files) // num_processes
+    start_idx = process_index * chunk_size
+    end_idx = (process_index + 1) * chunk_size if process_index != num_processes - 1 else len(input_files)
+
+    files_to_process = input_files[start_idx:end_idx]
+
+    for input_file in files_to_process:
         current_device = accelerator.device
         output_audio = output_folder / f"{input_file.stem}_enhanced.wav"
         enhance_audio(input_file, output_audio, run_dir, current_device, solver, nfe, tau)
