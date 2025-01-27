@@ -26,9 +26,7 @@ def node_inference(input_folder, output_folder, run_dir, solver="midpoint", nfe=
         print("No audio files found in the input folder.")
         return
 
-    input_files = accelerator.prepare(list(input_files))
-
-    num_gpus = torch.cuda.device_count()
+    input_files = list(input_files)
     mid_idx = len(input_files) // 2
     first_half = input_files[:mid_idx]
     second_half = input_files[mid_idx:]
@@ -39,8 +37,9 @@ def node_inference(input_folder, output_folder, run_dir, solver="midpoint", nfe=
             output_audio = output_folder / f"{input_file.stem}_enhanced.wav"
             enhance_audio(input_file, output_audio, run_dir, current_device, solver, nfe, tau)
 
-    accelerator.wait_for_everyone()
+    if accelerator.num_processes > 1:
+        accelerator.wait_for_everyone()
+    
+    process_files_on_gpu(first_half, 0)
+    process_files_on_gpu(second_half, 1)
 
-    with accelerator.start_parallel():
-        process_files_on_gpu(first_half, 0)
-        process_files_on_gpu(second_half, 1)
