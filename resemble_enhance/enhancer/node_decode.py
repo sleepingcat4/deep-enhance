@@ -3,6 +3,7 @@ import torchaudio
 from pathlib import Path
 from resemble_enhance.enhancer.inference import enhance
 from accelerate import Accelerator
+import multiprocessing
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -12,6 +13,12 @@ def enhance_audio(input_audio_path, output_audio_path, run_dir, device, solver="
     enhanced_audio, new_sr = enhance(dwav, sr, device, nfe=nfe, solver=solver, lambd=0.1, tau=tau, run_dir=run_dir)
     torchaudio.save(output_audio_path, enhanced_audio.unsqueeze(0), new_sr)
     print(f"Enhanced audio saved to: {output_audio_path}")
+
+def process_files_on_gpu(file_list, gpu_id, output_folder, run_dir, solver, nfe, tau):
+    for input_file in file_list:
+        current_device = torch.device(f"cuda:{gpu_id}")
+        output_audio = output_folder / f"{input_file.stem}_enhanced.wav"
+        enhance_audio(input_file, output_audio, run_dir, current_device, solver, nfe, tau)
 
 def node_inference(input_folder, output_folder, run_dir, solver="midpoint", nfe=64, tau=0.5):
     accelerator = Accelerator()
@@ -31,15 +38,11 @@ def node_inference(input_folder, output_folder, run_dir, solver="midpoint", nfe=
     first_half = input_files[:mid_idx]
     second_half = input_files[mid_idx:]
 
-    def process_files_on_gpu(file_list, gpu_id):
-        for input_file in file_list:
-            current_device = torch.device(f"cuda:{gpu_id}")
-            output_audio = output_folder / f"{input_file.stem}_enhanced.wav"
-            enhance_audio(input_file, output_audio, run_dir, current_device, solver, nfe, tau)
+    p1 = multiprocessing.Process(target=process_files_on_gpu, args=(first_half, 0, output_folder, run_dir, solver, nfe, tau))
+    p2 = multiprocessing.Process(target=process_files_on_gpu, args=(second_half, 1, output_folder, run_dir, solver, nfe, tau))
 
-    if accelerator.num_processes > 1:
-        accelerator.wait_for_everyone()
-    
-    process_files_on_gpu(first_half, 0)
-    process_files_on_gpu(second_half, 1)
+    p1.start()
+    p2.start()
 
+    p1.join()
+    p2.join()
