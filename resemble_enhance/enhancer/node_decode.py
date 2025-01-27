@@ -29,9 +29,18 @@ def node_inference(input_folder, output_folder, run_dir, solver="midpoint", nfe=
     input_files = accelerator.prepare(list(input_files))
 
     num_gpus = torch.cuda.device_count()
-    for idx, input_file in enumerate(input_files):
-        gpu_idx = idx % num_gpus
-        current_device = torch.device(f"cuda:{gpu_idx}") if num_gpus > 1 else accelerator.device
-        
-        output_audio = output_folder / f"{input_file.stem}_enhanced.wav"
-        enhance_audio(input_file, output_audio, run_dir, current_device, solver, nfe, tau)
+    mid_idx = len(input_files) // 2
+    first_half = input_files[:mid_idx]
+    second_half = input_files[mid_idx:]
+
+    def process_files_on_gpu(file_list, gpu_id):
+        for input_file in file_list:
+            current_device = torch.device(f"cuda:{gpu_id}")
+            output_audio = output_folder / f"{input_file.stem}_enhanced.wav"
+            enhance_audio(input_file, output_audio, run_dir, current_device, solver, nfe, tau)
+
+    accelerator.wait_for_everyone()
+
+    with accelerator.start_parallel():
+        process_files_on_gpu(first_half, 0)
+        process_files_on_gpu(second_half, 1)
